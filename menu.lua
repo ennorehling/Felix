@@ -13,6 +13,7 @@ function menu.keypressed(key, isrepeat)
     if key == 'f1' then
         menu.app.state = 'playing'
     elseif key == 'escape' then
+        print(game.score()))
         love.event.quit()
     end
 end

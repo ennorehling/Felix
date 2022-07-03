@@ -14,11 +14,12 @@ local game = {
     actors = {},
     speed = 64,
     next_spawn = 0,
-    time_elapsed = 0
+    time_elapsed = 0,
+    points = 0
 }
 
 function game.score()
-    return math.floor(10 * game.time_elapsed)
+    return math.floor(10 * game.time_elapsed) * 10 + game.points
 end
 
 function game.draw()
@@ -125,7 +126,6 @@ local function updatePlayer(actor, dt)
     else
         if actor.state == 'dead' then
             actor.y = 0
-            print("update ", #actor.animation.frames, actor.animation.name)
             if actor.frame_no == #actor.animation.frames then
                 return false
             end
@@ -226,6 +226,7 @@ function game.update(dt)
                 return false
             else
                 table.remove(game.actors, i)
+                game.points = game.points + 1000
             end
         end
     end
