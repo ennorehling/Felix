@@ -5,10 +5,9 @@ local felix
 -- minimum and maximum distance (in seconds) between enemies:
 local SPAWN_MIN = 2.0
 local SPAWN_MAX = 6.0
-local ENEMIES = 3 -- number of enemy characters we have
-local KEY_JUMP = 'x'
+local ENEMIES = 7 -- number of enemy characters we have
+local KEY_JUMP = 'space'
 local AIRTIME = 2.0
--- local logger = Log('game.log')
 local logger = nil
 local game = {
     actors = {},

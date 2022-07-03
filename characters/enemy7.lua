@@ -1,5 +1,5 @@
 return {
-    filename = 'professor.png',
+    filename = 'cili.png',
     animations = {
         idle = {
             loop = true,
