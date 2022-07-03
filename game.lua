@@ -11,22 +11,21 @@ local AIRTIME = 2.0
 -- local logger = Log('game.log')
 local logger = nil
 local game = {
-    paused = false,
     actors = {},
     speed = 64,
-    next_spawn = 0
+    next_spawn = 0,
+    time_elapsed = 0
 }
+
+function game.score()
+    return math.floor(10 * game.time_elapsed)
+end
 
 function game.draw()
     love.graphics.setBackgroundColor(179.0/255, 204.0/255, 1)
     local width = love.graphics.getWidth()
     local height = love.graphics.getHeight()
-    if game.paused then
-        love.graphics.print("paused", 10, 10)
-    else
-        love.graphics.print("playing", 10, 10)
-    end
-    love.graphics.print(felix.animation.name .. ": " .. felix.frame_no .. ", Y: " .. felix.y, 10, 20)
+    love.graphics.print('Score: ' .. game.score(), 10, 20)
     love.graphics.setColor(255, 255, 255, 255)
     love.graphics.line(0, height - 64, width, height - 64)
     for _, actor in ipairs(game.actors) do
@@ -77,6 +76,7 @@ local function updateAnimation(actor, dt)
     end
     actor.delta_time = delta
     actor.frame_no = frame_no
+    return true
 end
 
 function game.keyreleased(key, scancode)
@@ -89,9 +89,7 @@ function game.keyreleased(key, scancode)
 end
 
 function game.keypressed(key, scancode, isrepeat)
-    if key == 'p' then
-        game.paused = not game.paused
-    elseif key == 'escape' then
+    if key == 'escape' then
         felix:setState('dead')
     elseif felix.y == 0 then
         if key == KEY_JUMP then
@@ -108,6 +106,7 @@ function game.keypressed(key, scancode, isrepeat)
 end
 
 local function updatePlayer(actor, dt)
+    updateAnimation(actor, dt)
     if actor.state == 'airtime' then
         actor.airtime = actor.airtime - dt
         if actor.airtime * 2 > AIRTIME then
@@ -124,9 +123,9 @@ local function updatePlayer(actor, dt)
             actor.frame_no = 2
         end
     else
-        updateAnimation(actor, dt)
         if actor.state == 'dead' then
             actor.y = 0
+            print("update ", #actor.animation.frames, actor.animation.name)
             if actor.frame_no == #actor.animation.frames then
                 return false
             end
@@ -187,7 +186,6 @@ local function spawnPlayer(name)
     player.state = 'running'
     player.setState = function(actor, state)
         if state ~= actor.state then
-            print(state)
             if state == 'idle' then
                 actor:startAnimation('idle')
                 game.speed = 0
@@ -213,11 +211,10 @@ local function spawnPlayer(name)
 end
 
 function game.update(dt)
-    if game.paused then return end
+    game.time_elapsed = game.time_elapsed + dt
     game.next_spawn = game.next_spawn - dt
     if game.next_spawn < 0 then
         local n = love.math.random(ENEMIES)
-        print("spawn enemy", n)
         table.insert(game.actors, 1, spawnEnemy('enemy' .. n, updateStaticEnemy))
         game.next_spawn = love.math.random() * (SPAWN_MAX - SPAWN_MIN) + SPAWN_MIN
     end
@@ -226,12 +223,13 @@ function game.update(dt)
         local actor = game.actors[i]
         if not actor:update(dt) then
             if actor == felix then
-                love.event.quit()
+                return false
             else
                 table.remove(game.actors, i)
             end
         end
     end
+    return true
 end
 
 return function(app)

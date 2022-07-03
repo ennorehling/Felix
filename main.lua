@@ -18,7 +18,9 @@ function love.load()
 end
 
 function love.update(dt)
-    game.update(dt)
+    if not game.update(dt) then
+        love.event.quit()
+    end
 end
 
 function love.draw()
