@@ -7,7 +7,7 @@ local app = {
 }
 
 function love.load()
-    love.window.setMode(800, 200)
+    -- love.window.setMode(800, 200)
     app.container = {
         config = require('config'),
         json = require('json'),
