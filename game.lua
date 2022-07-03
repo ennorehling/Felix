@@ -2,15 +2,19 @@ local Actors
 
 local felix
 
+-- minimum and maximum distance (in seconds) between enemies:
+local SPAWN_MIN = 2.0
+local SPAWN_MAX = 6.0
+local ENEMIES = 3 -- number of enemy characters we have
 local KEY_JUMP = 'x'
 local AIRTIME = 2.0
-
 -- local logger = Log('game.log')
 local logger = nil
 local game = {
     paused = false,
     actors = {},
-    speed = 64
+    speed = 64,
+    next_spawn = 0
 }
 
 function game.draw()
@@ -75,21 +79,6 @@ local function updateAnimation(actor, dt)
     actor.frame_no = frame_no
 end
 
-function game.update(dt)
-    if game.paused then return end
-    local num_actors = #game.actors
-    for i = num_actors,1,-1 do
-        local actor = game.actors[i]
-        if not actor:update(dt) then
-            if actor == felix then
-                love.event.quit()
-            else
-                table.remove(game.actors, i)
-            end
-        end
-    end
-end
-
 function game.keyreleased(key, scancode)
     if key == KEY_JUMP then
         if felix.jump_held then
@@ -123,6 +112,7 @@ local function updatePlayer(actor, dt)
         actor.airtime = actor.airtime - dt
         if actor.airtime * 2 > AIRTIME then
             actor.y = actor.y + 1
+            actor.jump_held = false
         else
             actor.y = actor.y - 1
         end
@@ -184,7 +174,7 @@ end
 local function spawnEnemy(name, update)
     local anim = require('characters.' .. name)
     local width = love.graphics.getWidth()
-    local enemy = Actors.new(width-400, 0, anim)
+    local enemy = Actors.new(width, 0, anim)
     enemy.update = update
     enemy:startAnimation('idle')
     return enemy
@@ -222,11 +212,32 @@ local function spawnPlayer(name)
     return player
 end
 
+function game.update(dt)
+    if game.paused then return end
+    game.next_spawn = game.next_spawn - dt
+    if game.next_spawn < 0 then
+        local n = love.math.random(ENEMIES)
+        print("spawn enemy", n)
+        table.insert(game.actors, 1, spawnEnemy('enemy' .. n, updateStaticEnemy))
+        game.next_spawn = love.math.random() * (SPAWN_MAX - SPAWN_MIN) + SPAWN_MIN
+    end
+    local num_actors = #game.actors
+    for i = num_actors,1,-1 do
+        local actor = game.actors[i]
+        if not actor:update(dt) then
+            if actor == felix then
+                love.event.quit()
+            else
+                table.remove(game.actors, i)
+            end
+        end
+    end
+end
+
 return function(app)
     game.app = app
     Actors = require('actors')
-    felix = spawnPlayer('mickey')
+    felix = spawnPlayer('felix')
     table.insert(game.actors, felix)
-    table.insert(game.actors, 1, spawnEnemy('enemy', updateStaticEnemy))
     return game
 end
