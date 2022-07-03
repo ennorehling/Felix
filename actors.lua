@@ -16,6 +16,7 @@ local actor_class = {
             self.animation = self.animations[name]
             return true
         end
+        print("no aniumation " .. name)
         return false
     end,
     setNextAnimation = function(self, name)

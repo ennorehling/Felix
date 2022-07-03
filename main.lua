@@ -1,6 +1,6 @@
 package.cpath="./?.dll;./?.so"
 
-local game, menu
+local game
 local app = { 
     container = {},
     state = 'playing'
@@ -13,33 +13,23 @@ function love.load()
         json = require('json'),
         https = require('https')
     } 
-    local Menu = require('menu')
-    menu = Menu(app)
     local Game = require('game')
     game = Game(app)
 end
 
 function love.update(dt)
-    if app.state == 'menu' then
-        menu.update(dt)
-    elseif app.state == 'playing' then
-        game.update(dt)
-    end
+    game.update(dt)
 end
 
 function love.draw()
     love.graphics.setColor(0, 0, 0)
-    love.graphics.print(app.state, 10, 0)
     game.draw()
-    if app.state == 'menu' then
-        menu.draw()
-    end
 end
 
-function love.keypressed(key, isrepeat)
-    if app.state == 'menu' then
-        menu.keypressed(key, isrepeat)
-    elseif app.state == 'playing' then
-        game.keypressed(key, isrepeat)
-    end
+function love.keypressed(key, scancode, isrepeat)
+    game.keypressed(key, scancode, isrepeat)
+end
+
+function love.keyreleased(key, scancode)
+    game.keyreleased(key, scancode)
 end

@@ -2,6 +2,9 @@ local Actors
 
 local felix
 
+local KEY_JUMP = 'x'
+local AIRTIME = 2.0
+
 -- local logger = Log('game.log')
 local logger = nil
 local game = {
@@ -19,6 +22,7 @@ function game.draw()
     else
         love.graphics.print("playing", 10, 10)
     end
+    love.graphics.print(felix.animation.name .. ": " .. felix.frame_no .. ", Y: " .. felix.y, 10, 20)
     love.graphics.setColor(255, 255, 255, 255)
     love.graphics.line(0, height - 64, width, height - 64)
     for _, actor in ipairs(game.actors) do
@@ -73,20 +77,36 @@ end
 
 function game.update(dt)
     if game.paused then return end
-    for _, actor in ipairs(game.actors) do
+    local num_actors = #game.actors
+    for i = num_actors,1,-1 do
+        local actor = game.actors[i]
         if not actor:update(dt) then
-            love.event.quit()
+            if actor == felix then
+                love.event.quit()
+            else
+                table.remove(game.actors, i)
+            end
         end
     end
 end
 
-function game.keypressed(key, isrepeat)
+function game.keyreleased(key, scancode)
+    if key == KEY_JUMP then
+        if felix.jump_held then
+            felix.jump_held = false
+            felix.airtime = AIRTIME - felix.airtime
+        end
+    end
+end
+
+function game.keypressed(key, scancode, isrepeat)
     if key == 'p' then
         game.paused = not game.paused
     elseif key == 'escape' then
         felix:setState('dead')
     elseif felix.y == 0 then
-        if key == 'z' then
+        if key == KEY_JUMP then
+            felix.jump_held = true
             felix:setState('jumping')
         elseif key == 'x' then
             if felix.state == 'idle' then
@@ -99,39 +119,47 @@ function game.keypressed(key, isrepeat)
 end
 
 local function updatePlayer(actor, dt)
-    updateAnimation(actor, dt)
-    if actor.state == 'dead' then
-        if actor.frame_no == #actor.animation.frames then
-            return false
-        end
-    end
     if actor.state == 'airtime' then
-        if love.keyboard.isDown('z') then
-            actor.airtime = actor.airtime - dt
+        actor.airtime = actor.airtime - dt
+        if actor.airtime * 2 > AIRTIME then
+            actor.y = actor.y + 1
         else
-            actor.airtime = 0.0
+            actor.y = actor.y - 1
         end
-        if actor.airtime < 0.0 then
+        if actor.airtime <= 0.0 then
             actor:setState('falling')
+        elseif actor.airtime < 0.4 * AIRTIME then
+            actor.frame_no = 3
+        elseif actor.airtime < 0.7 * AIRTIME then
+            actor.frame_no = 2
         end
-    end
-    if actor.state == 'jumping' then
-        actor.y = actor.y + 2
-        local numframes = #actor.animation.frames
-        if actor.frame_no == numframes then 
-            if love.keyboard.isDown('z') then
-                actor.airtime = 0.5
-                actor:setState('airtime')
-            else
-                actor:setState('falling')
+    else
+        updateAnimation(actor, dt)
+        if actor.state == 'dead' then
+            actor.y = 0
+            if actor.frame_no == #actor.animation.frames then
+                return false
             end
         end
-    elseif actor.state == 'falling' then
-        if actor.y > 0 then
-            actor.y = actor.y - 2
-        end
-        if actor.y == 0 then
-            actor:setState('running')
+        if actor.state == 'jumping' then
+            actor.y = actor.y + 4
+            local numframes = #actor.animation.frames
+            if actor.frame_no == numframes then 
+                if love.keyboard.isDown(KEY_JUMP) then
+                    actor.airtime = AIRTIME
+                    actor:setState('airtime')
+                else
+                    actor:setState('falling')
+                end
+            end
+        elseif actor.state == 'falling' then
+            if actor.y > 0 then
+                actor.y = actor.y - 4
+            end
+            if actor.y <= 0 then
+                actor.y = 0
+                actor:setState('running')
+            end
         end
     end
     return true
@@ -176,8 +204,10 @@ local function spawnPlayer(name)
             elseif state == 'jumping' then
                 actor:startAnimation('jump', 6)
                 game.speed = 64
-            elseif state == 'hover' then
-                actor:startAnimation('airtime')
+            elseif state == 'airtime' then
+                actor:startAnimation('hover')
+            elseif state == 'falling' then
+                actor:startAnimation('fall')
             elseif state == 'running' then
                 actor:startAnimation('run')
                 game.speed = 64
