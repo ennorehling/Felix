@@ -86,7 +86,11 @@ sdk.submitScore = function(leaderboard_id, score)
 end
 
 sdk.getScoreList = function(leaderboard_id, count, after)
-    local url = api_host .. '/game/leaderboards/' .. leaderboard_id .. '/list' .. '?count=10&after=0'
+    local url = api_host .. '/game/leaderboards/' .. leaderboard_id .. '/list' .. '?count=' .. count
+    if after then
+        url = url .. '&after=' .. after
+    end
+    print(url)
     code, body, headers = request(url, "get")
     return json.decode(body)
 end

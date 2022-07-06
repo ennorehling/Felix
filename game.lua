@@ -95,12 +95,6 @@ function game.keypressed(key, scancode, isrepeat)
         if key == KEY_JUMP then
             felix.jump_held = true
             felix:setState('jumping')
-        elseif key == 'x' then
-            if felix.state == 'idle' then
-                felix:setState('running')
-            else
-                felix:setState('idle')
-            end
         end
     end
 end
